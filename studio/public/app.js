@@ -911,6 +911,10 @@ function cloudInit() {
   }, 15000);
 }
 
+$('bannerOpen').addEventListener('click', () => {
+  window.open('http://127.0.0.1:3000', '_blank', 'noopener');
+});
+
 $('bannerRetry').addEventListener('click', async () => {
   const b = $('bannerRetry');
   b.textContent = '…';
