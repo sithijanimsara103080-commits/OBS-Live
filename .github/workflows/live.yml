@@ -1,41 +1,17 @@
 name: Cloud OBS 4H Live
-
 on:
   workflow_dispatch:
     inputs:
       zoom_link:
-        description: 'Zoom Link 1'
+        description: 'Zoom Link'
         required: true
-      zoom_link_2:
-        description: 'Zoom Link 2 (Optional Backup)'
-        required: false
       stream_key:
-        description: 'Full RTMP URL rtmp://a.rtmp.youtube.com/live2/KEY'
+        description: 'RTMP URL'
         required: true
-  repository_dispatch:
-    types: [switch_zoom_1, switch_zoom_2]
-
 jobs:
   live:
     runs-on: ubuntu-latest
     timeout-minutes: 250
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - name: Install Deps
-        run: |
-          sudo apt update
-          sudo apt install -y ffmpeg xvfb pulseaudio
-          npx playwright install chromium --with-deps
-          npm install
-      - name: Start 4H No-Cut Bot
-        env:
-          ZOOM_LINK: ${{ github.event.inputs.zoom_link || github.event.client_payload.zoom_link }}
-          ZOOM_LINK_2: ${{ github.event.inputs.zoom_link_2 }}
-          YT_RTMP: ${{ github.event.inputs.stream_key }}
-          SWITCH_TO: ${{ github.event.action }}
-        run: |
-          Xvfb :99 -screen 0 1280x720x24 &
-          export DISPLAY=:99
-          node bot.js
+      - run: echo "Workflow detected!"
