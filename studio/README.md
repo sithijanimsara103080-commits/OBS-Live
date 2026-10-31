@@ -20,6 +20,11 @@ start `start-studio.bat` on your PC — the page finds the local server
 automatically and the header badge switches to **LOCAL**. If it says there is no
 server, press **Retry** after starting it.
 
+> Browsers block a public web page from calling `127.0.0.1` until you allow it.
+> If the badge stays **WEB**, click **Allow** on Chrome's *“wants to access
+> devices on your local network”* prompt, or just press **Open local studio**
+> (`http://127.0.0.1:3000`) — same app, no permission needed.
+
 The **Cloud** tab starts/stops the GitHub Actions stream (Zoom → YouTube) with a
 GitHub token (`Actions: read and write`); the token is kept in your browser
 only.
