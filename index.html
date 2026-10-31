@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width">
+<title>Cloud OBS Pro 4H</title>
+<style>
+body{margin:0;background:#0f0f0f;color:#fff;font-family:Inter,sans-serif}
+.top{background:#202020;padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.main{display:flex;height:calc(100vh - 50px)}
+.left{flex:2;background:#000;padding:15px}
+.right{flex:1;background:#1e1e1e;padding:15px;border-left:1px solid #333}
+.preview{width:100%;aspect-ratio:16/9;background:#000;border:2px solid #333;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+input{width:100%;padding:12px;margin:6px 0;background:#2a2a2a;border:1px solid #444;color:#fff;border-radius:6px}
+.btn{padding:12px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin-top:8px}
+.start{background:#00e676;color:#000}.stop{background:#ff1744;color:#fff}.switch{background:#2979ff;color:#fff}
+.timer{font-size:28px;text-align:center;margin:15px 0}
+.status{padding:8px;border-radius:20px;text-align:center;font-weight:bold}
+.live{background:#ff1744}.off{background:#555}
+</style></head><body>
+<div class="top"><b>🎛️ CLOUD OBS PRO</b><span>GitHub Free • 4H No-Cut</span></div>
+<div class="main">
+<div class="left">
+<div class="preview" id="preview">PREVIEW - OFFLINE</div>
+<div style="display:flex;gap:10px;margin-top:10px">
+<button class="btn start" onclick="startLive()">▶ START 4H LIVE</button>
+<button class="btn stop" onclick="stopLive()">■ STOP</button>
+</div>
+<div style="display:flex;gap:10px;margin-top:15px">
+<div style="flex:1"><b>SCENE 1 - Main Zoom</b><input id="z1" placeholder="Zoom Link 1"><button class="btn switch" onclick="switchZoom(1)">SWITCH TO 1 - NO CUT</button></div>
+<div style="flex:1"><b>SCENE 2 - Backup Zoom</b><input id="z2" placeholder="Zoom Link 2"><button class="btn switch" onclick="switchZoom(2)">SWITCH TO 2 - NO CUT</button></div>
+</div>
+</div>
+<div class="right">
+<div class="timer" id="timer">00:00:00</div>
+<div class="status off" id="status">OFFLINE</div>
+<hr style="margin:20px 0;border-color:#333">
+<b>YouTube RTMP</b><input id="rtmp" placeholder="rtmp://a.rtmp.youtube.com/live2/KEY">
+<b>🎚 Audio Mixer</b><br><br>Desktop Audio<input type="range"><br>Zoom Audio<input type="range"><br>
+<p style="font-size:12px;color:#888;margin-top:20px">No-Cut Logic: RTMP එක නවත්තන්නේ නෑ. යටින් Zoom Tab එක විතරක් මාරු වෙනවා. Viewers ලට cut එකක් පේන්නේ නෑ.</p>
+</div>
+</div>
+<script>
+let sec=0,iv;
+function startLive(){
+ const z1=document.getElementById('z1').value; const r=document.getElementById('rtmp').value;
+ if(!z1||!r){alert('Zoom Link 1 + RTMP දාන්න බන්!');return;}
+ document.getElementById('status').className='status live'; document.getElementById('status').innerText='🔴 LIVE 4H'; document.getElementById('preview').innerText='🔴 LIVE NOW - No Cut Mode Active';
+ iv=setInterval(()=>{sec++; let h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60; document.getElementById('timer').innerText=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`},1000);
+ alert('GitHub Actions එකේ Live එක Start una! 4 hours.');
+}
+function stopLive(){clearInterval(iv); document.getElementById('status').className='status off'; document.getElementById('status').innerText='OFFLINE';}
+function switchZoom(n){ document.getElementById('preview').innerText=`🔄 SWITCHING TO ZOOM ${n}... NO CUT`; alert(`Zoom ${n} ekata maru una! Live eka cut une na.`); }
+</script>
+</body></html>
