@@ -1,17 +1,103 @@
-name: Cloud OBS 4H Live
+name: Cloud OBS 24/7
+
 on:
   workflow_dispatch:
     inputs:
+      duration_min:
+        description: 'Minutes to stream this run (keep under 350)'
+        required: false
+        default: '345'
       zoom_link:
-        description: 'Zoom Link'
-        required: true
-      stream_key:
-        description: 'RTMP URL'
-        required: true
+        description: 'Zoom link (leave empty to use the ZOOM_LINK secret)'
+        required: false
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cloud-obs-live
+  cancel-in-progress: false
+
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 250
+    timeout-minutes: 358
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Workflow detected!"
+
+      - name: Skip when a stream is already running
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          active=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/live.yml/runs?status=in_progress&per_page=30" \
+            --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID})] | length" 2>/dev/null || echo 0)
+          echo "already_running=${active}" >> "$GITHUB_OUTPUT"
+
+      - name: Queue the next run (instant hand-off when this one ends)
+        if: steps.guard.outputs.already_running == '0' && vars.AUTO_RESTART == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "GH_PAT secret is not set - 24/7 chain disabled"
+            exit 0
+          fi
+          gh workflow run live.yml --repo "$GITHUB_REPOSITORY" -f duration_min=345 \
+            || echo "dispatch failed (check GH_PAT) - continuing with this run"
+          echo "next run queued"
+
+      - name: Install system dependencies
+        if: steps.guard.outputs.already_running == '0'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg xvfb pulseaudio pulseaudio-utils \
+            wget ca-certificates unzip fonts-liberation \
+            libgbm1 libnss3 libxss1 libatk1.0-0 libatk-bridge2.0-0 \
+            libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 \
+            libxfixes3 libxrandr2 libpango-1.0-0 libcairo2
+
+      - name: Install Google Chrome
+        if: steps.guard.outputs.already_running == '0'
+        run: |
+          wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y /tmp/chrome.deb
+          /usr/bin/google-chrome-stable --version
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.already_running == '0'
+        with:
+          node-version: '20'
+
+      - name: Install node modules
+        if: steps.guard.outputs.already_running == '0'
+        run: npm install --no-audit --no-fund
+
+      - name: Go live
+        if: steps.guard.outputs.already_running == '0'
+        env:
+          YT_RTMP: ${{ secrets.YT_RTMP }}
+          ZOOM_LINK: ${{ github.event.inputs.zoom_link || secrets.ZOOM_LINK }}
+          ZOOM_NAME: ${{ vars.ZOOM_NAME || 'Live' }}
+          DURATION_MIN: ${{ github.event.inputs.duration_min || '345' }}
+          MAX_RUN_MIN: ${{ github.event.inputs.duration_min || '345' }}
+        run: |
+          chmod +x scripts/run.sh
+          ./scripts/run.sh
+
+      - name: Upload logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-logs-${{ github.run_id }}
+          path: |
+            /tmp/shots
+            /tmp/xvfb.log
+            /tmp/pulse.log
+          retention-days: 3
+          if-no-files-found: ignore

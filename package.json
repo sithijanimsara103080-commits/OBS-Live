@@ -1,7 +1,16 @@
 {
-  "name": "zoom-auto-live-obs",
-  "version": "1.0.0",
+  "name": "zoom-to-youtube-24-7",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Join a Zoom meeting in headless Chrome and push it to YouTube Live 24/7",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "playwright": "^1.44.0"
+    "playwright-core": "^1.48.2"
   }
 }
