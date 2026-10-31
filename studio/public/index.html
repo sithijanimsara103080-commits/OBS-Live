@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud OBS Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">CLOUD <b>OBS</b> STUDIO</div>
+  <div class="pill"><span class="dot" id="dot"></span><span id="statusText">OFFLINE</span></div>
+  <div class="pill small" id="srcBadge" title="Where this UI is connected">WEB</div>
+  <div class="spacer"></div>
+  <button class="btn green" id="btnStart">&#9654; Go live</button>
+  <button class="btn red" id="btnStop">&#9632; Stop</button>
+  <button class="btn blue" id="btnApply" title="Rebuild the encoder with the current scene">Apply live</button>
+</header>
+
+<div class="banner" id="banner" style="display:none">
+  <span><b>Local studio server not reachable.</b> Start <code>studio\start-studio.bat</code> on your PC, then retry.</span>
+  <button class="btn sm" id="bannerRetry">Retry</button>
+</div>
+
+<main>
+  <section class="left">
+    <div class="stagebox">
+      <div class="stage" id="stage">
+        <div class="canvas" id="canvas"></div>
+        <div class="stage-empty" id="stageEmpty">Add an image, video, logo or text from the right panel</div>
+      </div>
+    </div>
+
+    <div class="inspector" id="inspector"></div>
+
+    <div class="previewbar" id="layerbar"></div>
+  </section>
+
+  <aside>
+    <div class="tabs">
+      <button class="tab active" data-tab="sources">Sources</button>
+      <button class="tab" data-tab="stream">Stream</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="cloud">Cloud</button>
+    </div>
+
+    <div class="tabbody">
+      <!-- SOURCES -->
+      <div class="pane active" id="pane-sources">
+        <div class="section">
+          <h3>Add from my PC</h3>
+          <div class="drop" id="drop">
+            <b>Drop files here</b><br>
+            <span id="dropHint">images &middot; videos &middot; logos (PNG)</span>
+          </div>
+          <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+          <div class="row" style="margin-top:8px">
+            <button class="btn sm" id="btnPickImage">+ Image / Logo</button>
+            <button class="btn sm" id="btnPickVideo">+ Video</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Other sources</h3>
+          <div class="row">
+            <button class="btn sm" id="btnAddText">+ Text</button>
+            <button class="btn sm" id="btnAddColor">+ Colour</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn sm" id="btnAddScreen">+ Screen / Window</button>
+          </div>
+          <div class="hint">Screen capture uses <span class="kbd">gdigrab</span>. For a window, type its exact title in the inspector.</div>
+        </div>
+
+        <div class="section">
+          <h3>Media library</h3>
+          <div class="lib" id="lib"></div>
+        </div>
+      </div>
+
+      <!-- STREAM -->
+      <div class="pane" id="pane-stream">
+        <div class="section">
+          <h3>YouTube / RTMP</h3>
+          <label class="f">RTMP URL</label>
+          <input type="text" id="rtmpUrl" placeholder="rtmp://a.rtmp.youtube.com/live2">
+          <label class="f">Stream key</label>
+          <input type="password" id="streamKey" placeholder="paste your stream key">
+          <label class="f">Zoom link (optional, saved)</label>
+          <input type="text" id="zoomLink" placeholder="https://zoom.us/j/...">
+          <div class="hint">Everything is stored locally in <code>studio/data/settings.json</code>. No GitHub secrets.</div>
+        </div>
+
+        <div class="section">
+          <h3>Status</h3>
+          <div class="stat"><span>Encoder</span><b id="encState">stopped</b></div>
+          <div class="stat"><span>Uptime</span><b id="uptime">—</b></div>
+          <div class="stat"><span>Layers</span><b id="layerCount">0</b></div>
+        </div>
+
+        <div class="section">
+          <h3>Log</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="pane" id="pane-settings">
+        <div class="section">
+          <h3>Video</h3>
+          <div class="grid2">
+            <div>
+              <label class="f">Resolution</label>
+              <select id="res">
+                <option value="1280x720">1280 x 720</option>
+                <option value="1920x1080">1920 x 1080</option>
+                <option value="854x480">854 x 480</option>
+              </select>
+            </div>
+            <div>
+              <label class="f">FPS</label>
+              <select id="fps">
+                <option value="30">30</option>
+                <option value="60">60</option>
+                <option value="25">25</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div>
+              <label class="f">Bitrate (kbps)</label>
+              <input type="number" id="bitrate" min="500" max="12000" step="250">
+            </div>
+            <div>
+              <label class="f">Preset</label>
+              <select id="preset">
+                <option value="ultrafast">ultrafast (weak PC)</option>
+                <option value="veryfast">veryfast</option>
+                <option value="faster">faster</option>
+                <option value="medium">medium (strong PC)</option>
+              </select>
+            </div>
+          </div>
+          <label class="f">Background colour</label>
+          <input type="text" id="bg" placeholder="#101014">
+          <div class="row" style="margin-top:14px">
+            <button class="btn green" id="btnSaveSettings">Save settings</button>
+          </div>
+          <div class="hint">Changing resolution or fps while live needs <b>Apply live</b>.</div>
+        </div>
+
+        <div class="section">
+          <h3>About</h3>
+          <div class="hint" id="about">Loading…</div>
+        </div>
+      </div>
+
+      <!-- CLOUD -->
+      <div class="pane" id="pane-cloud">
+        <div class="section">
+          <h3>GitHub Actions stream <span class="pill small" id="cloudLive">idle</span></h3>
+          <div class="hint">Runs the Zoom &rarr; YouTube job in the cloud (no PC needed). It joins the Zoom link saved in the repository secrets.</div>
+          <label class="f">Repository</label>
+          <input type="text" id="ghRepo" placeholder="user/repo">
+          <label class="f">GitHub token <span class="mut">(saved in this browser only)</span></label>
+          <input type="password" id="ghToken" placeholder="ghp_…  needs Actions: read &amp; write">
+          <div class="row" style="margin-top:12px">
+            <button class="btn green" id="cloudStart">&#9654; Start cloud stream</button>
+            <button class="btn red disabled" id="cloudStop">&#9632; Stop</button>
+          </div>
+          <div class="hint" style="margin-top:10px">Create one at github.com/settings/tokens with <b>Actions: read and write</b> on just this repository.</div>
+        </div>
+
+        <div class="section">
+          <h3>Latest run</h3>
+          <div id="cloudStatus"><span class="mut">—</span></div>
+          <div class="runs" id="cloudRuns"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

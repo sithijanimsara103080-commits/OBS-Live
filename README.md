@@ -1,5 +1,18 @@
 # Cloud OBS 24/7 — Zoom → YouTube
 
+> **Looking for the OBS-style app on your own PC?** Open [`studio/`](studio/README.md)
+> and double-click `studio/start-studio.bat`. It gives you a browser-based
+> OBS: add your own videos, photos, logos and text, then go live to YouTube.
+> No secrets, no GitHub — everything is saved locally.
+>
+> **Web UI:** https://sithijanimsara103080-commits.github.io/OBS-Live/ — the
+> same studio, served from GitHub Pages. Start `start-studio.bat` on the PC and
+> the page connects to it automatically.
+
+---
+
+## Cloud version (GitHub Actions)
+
 Joins a Zoom meeting in a headless Chromium (Zoom **web client**), captures the
 screen + meeting audio with `ffmpeg`, and pushes it to YouTube Live over RTMP.
 Runs on GitHub Actions and keeps itself alive 24/7 with a self-dispatch chain.

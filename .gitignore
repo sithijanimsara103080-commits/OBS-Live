@@ -1,0 +1,4 @@
+node_modules/
+studio/data/
+studio/media/
+*.log
