@@ -10,6 +10,10 @@ on:
       zoom_link:
         description: 'Zoom link (leave empty to use the ZOOM_LINK secret)'
         required: false
+      bot_mode:
+        description: 'app = Zoom desktop client (default), web = Zoom web client'
+        required: false
+        default: 'app'
   schedule:
     - cron: '0 */2 * * *'
 
@@ -60,7 +64,31 @@ jobs:
             wget ca-certificates unzip fonts-liberation \
             libgbm1 libnss3 libxss1 libatk1.0-0 libatk-bridge2.0-0 \
             libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 \
-            libxfixes3 libxrandr2 libpango-1.0-0 libcairo2
+            libxfixes3 libxrandr2 libpango-1.0-0 libcairo2 \
+            openbox xdotool x11-utils dbus-x11 \
+            libxcb-xtest0 libxcb-shape0 libxcb-xfixes0 libxcb-icccm4 \
+            libxcb-keysyms1 libxcb-image0 libxcb-render-util0 \
+            libxkbcommon-x11-0 libxcb-xinerama0 libxcb-cursor0 libegl1 \
+            libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 \
+            libasound2-plugins libxcb-randr0 libgl1 libsecret-1-0 \
+            libxcb-xinput0 libdbus-1-3 libqt5core5a libqt5gui5 libqt5dbus5 \
+            libqt5widgets5 libqt5network5 libqt5svg5 libqt5x11extras5 \
+            libxcb-icccm4 libxcb-util1 libxcb-render0 libpulse-mainloop-glib0 \
+            libxtst6 libxinerama1 libxi6 libsm6 libice6
+
+      - name: Install Zoom desktop client
+        if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') != 'web'
+        run: |
+          set -e
+          for u in https://zoom.us/client/latest/zoom_amd64.deb \
+                   https://us05web.zoom.us/client/latest/zoom_amd64.deb; do
+            if wget -q -O /tmp/zoom.deb "$u"; then break; fi
+          done
+          ls -l /tmp/zoom.deb
+          sudo apt-get install -y /tmp/zoom.deb || sudo dpkg -i /tmp/zoom.deb || true
+          sudo apt-get -f install -y || true
+          ls -l /opt/zoom/zoom
+          /opt/zoom/zoom --version || true
 
       - name: Install Google Chrome
         if: steps.guard.outputs.already_running == '0'
@@ -85,11 +113,12 @@ jobs:
           ZOOM_LINK: ${{ github.event.inputs.zoom_link || vars.ZOOM_LINK || secrets.ZOOM_LINK }}
           ZOOM_NAME: ${{ vars.ZOOM_NAME || 'Live' }}
           BRAND_TEXT: ${{ vars.BRAND_TEXT || 'Radapasa Astronomical Society' }}
+          BOT_MODE: ${{ github.event.inputs.bot_mode || vars.BOT_MODE || 'app' }}
           DURATION_MIN: ${{ github.event.inputs.duration_min || '345' }}
           MAX_RUN_MIN: ${{ github.event.inputs.duration_min || '345' }}
         run: |
-          chmod +x scripts/run.sh
-          ./scripts/run.sh
+          chmod +x scripts/run.sh scripts/run-app.sh
+          if [ "${BOT_MODE}" = "web" ]; then ./scripts/run.sh; else ./scripts/run-app.sh; fi
 
       - name: Upload logs and screenshots
         if: always()
