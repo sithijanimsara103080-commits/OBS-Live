@@ -91,19 +91,19 @@ jobs:
           /opt/zoom/zoom --version || true
 
       - name: Install Google Chrome
-        if: steps.guard.outputs.already_running == '0'
+        if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') == 'web'
         run: |
           wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y /tmp/chrome.deb
           /usr/bin/google-chrome-stable --version
 
       - uses: actions/setup-node@v4
-        if: steps.guard.outputs.already_running == '0'
+        if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') == 'web'
         with:
           node-version: '20'
 
       - name: Install node modules
-        if: steps.guard.outputs.already_running == '0'
+        if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') == 'web'
         run: npm install --no-audit --no-fund
 
       - name: Go live
