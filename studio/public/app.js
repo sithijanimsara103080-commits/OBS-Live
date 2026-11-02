@@ -652,8 +652,9 @@ async function boot() {
   setOffline(!online);
   if (!online) {
     $('about').innerHTML =
-      'This page is running from GitHub Pages.<br>' +
-      'Start <code>studio\\start-studio.bat</code> on your PC, then press <b>Retry</b>.';
+      'Running from GitHub Pages. Start <code>studio\\start-studio.bat</code> on your PC for the full studio, ' +
+      'or use the <b>Cloud</b> tab to run the stream on GitHub (PC can be off).';
+    switchTab('cloud');
     return;
   }
   $('srcBadge').textContent = 'LOCAL';
@@ -685,13 +686,13 @@ async function boot() {
 }
 
 /* tabs */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
+  document.querySelectorAll('.pane').forEach((x) => x.classList.toggle('active', x.id === `pane-${name}`));
+  if (name === 'cloud') cloudRefresh(true);
+}
 document.querySelectorAll('.tab').forEach((t) => {
-  t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
-    document.querySelectorAll('.pane').forEach((x) => x.classList.remove('active'));
-    t.classList.add('active');
-    $(`pane-${t.dataset.tab}`).classList.add('active');
-  });
+  t.addEventListener('click', () => switchTab(t.dataset.tab));
 });
 
 /* sources */
@@ -846,10 +847,6 @@ function cloudStatusLine(run) {
 }
 
 async function cloudRefresh(quiet) {
-  if (!CLOUD.token) {
-    $('cloudStatus').innerHTML = '<span class="mut">Add a GitHub token (Actions: read &amp; write) to see live status.</span>';
-    return;
-  }
   try {
     const j = await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/runs?per_page=5`);
     const runs = j.workflow_runs || [];
@@ -861,9 +858,10 @@ async function cloudRefresh(quiet) {
        <span class="mut">${escapeHtml(new Date(r.created_at).toLocaleString())}</span></div>`
     ).join('') || '<span class="mut">No runs yet.</span>';
     const active = runs.some((r) => r.status === 'queued' || r.status === 'in_progress');
-    $('cloudStop').classList.toggle('disabled', !active);
-    if (active) $('cloudLive').textContent = 'LIVE';
-    else $('cloudLive').textContent = 'idle';
+    $('cloudStop').classList.toggle('disabled', !active || !CLOUD.token);
+    $('cloudLive').textContent = active ? 'LIVE' : 'idle';
+    if (!CLOUD.token) $('cloudHint').textContent = 'Read-only view. Add a token below to start/stop runs from here.';
+    else $('cloudHint').textContent = '';
   } catch (e) {
     if (!quiet) toast('Cloud status: ' + e.message, true);
     $('cloudStatus').innerHTML = `<span class="mut">${escapeHtml(e.message)}</span>`;
@@ -905,6 +903,9 @@ function cloudInit() {
       toast('Cancelling run #' + run.run_number);
       setTimeout(() => cloudRefresh(true), 3000);
     } catch (e) { toast('Stop failed: ' + e.message, true); }
+  });
+  $('cloudOpen').addEventListener('click', () => {
+    window.open(`https://github.com/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}`, '_blank', 'noopener');
   });
   setInterval(() => {
     if ($('pane-cloud') && $('pane-cloud').classList.contains('active')) cloudRefresh(true);

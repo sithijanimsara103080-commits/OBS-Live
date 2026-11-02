@@ -161,7 +161,8 @@
       <div class="pane" id="pane-cloud">
         <div class="section">
           <h3>GitHub Actions stream <span class="pill small" id="cloudLive">idle</span></h3>
-          <div class="hint">Runs the Zoom &rarr; YouTube job in the cloud (no PC needed). It joins the Zoom link saved in the repository secrets.</div>
+          <div class="hint">Runs the Zoom &rarr; YouTube job in the cloud. Works with your PC switched off.</div>
+          <div class="hint" id="cloudHint"></div>
           <label class="f">Repository</label>
           <input type="text" id="ghRepo" placeholder="user/repo">
           <label class="f">GitHub token <span class="mut">(saved in this browser only)</span></label>
@@ -170,7 +171,10 @@
             <button class="btn green" id="cloudStart">&#9654; Start cloud stream</button>
             <button class="btn red disabled" id="cloudStop">&#9632; Stop</button>
           </div>
-          <div class="hint" style="margin-top:10px">Create one at github.com/settings/tokens with <b>Actions: read and write</b> on just this repository.</div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn sm" id="cloudOpen">Open on GitHub &#8599;</button>
+          </div>
+          <div class="hint" style="margin-top:10px">Create a token at github.com/settings/tokens with <b>Actions: read and write</b> on just this repository.</div>
         </div>
 
         <div class="section">
