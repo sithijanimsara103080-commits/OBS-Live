@@ -995,6 +995,12 @@ async function cloudStopStream() {
 }
 
 function cloudInit() {
+  const m = location.hash.match(/[#&]t=([A-Za-z0-9_]{20,})/);
+  if (m) {
+    CLOUD.token = m[1];
+    localStorage.setItem('gh_token', CLOUD.token);
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+  }
   $('ghRepo').value = CLOUD.repo;
   $('ghToken').value = CLOUD.token;
   $('ghToken').addEventListener('change', () => {
