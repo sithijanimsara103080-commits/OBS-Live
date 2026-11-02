@@ -129,8 +129,15 @@ press_join_buttons() {
 
 launch_zoom() {
   log "launching Zoom client"
-  "$ZOOM_BIN" "$join_url" >/tmp/zoom.log 2>&1 &
+  export LD_LIBRARY_PATH="/opt/zoom:/opt/zoom/lib:${LD_LIBRARY_PATH:-}"
+  export QT_QPA_PLATFORM=xcb
+  if [ -x /opt/zoom/zoom.sh ]; then
+    /opt/zoom/zoom.sh "$join_url" >/tmp/zoom.log 2>&1 &
+  else
+    "$ZOOM_BIN" "$join_url" >/tmp/zoom.log 2>&1 &
+  fi
   ZOOM_PID=$!
+  ldd "$ZOOM_BIN" 2>/dev/null | grep 'not found' | head -5 >>/tmp/zoom.log
 }
 
 in_meeting() {
