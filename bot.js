@@ -19,6 +19,9 @@ const SHOTS_DIR = process.env.SHOTS_DIR || '/tmp/shots';
 const MAX_RUN_MIN = Number(process.env.MAX_RUN_MIN || 345);
 const JOIN_TIMEOUT_MS = Number(process.env.JOIN_TIMEOUT_MIN || 40) * 60 * 1000;
 const KEEPALIVE_MS = 10000;
+const BRAND_TEXT = process.env.BRAND_TEXT || 'Radapasa Astronomical Society';
+const BRAND_FILE = '/tmp/obs-brand.html';
+const SHARE_POLL_MS = 2000;
 
 const HARD_STOP = Date.now() + MAX_RUN_MIN * 60 * 1000;
 let stopping = false;
@@ -214,6 +217,67 @@ async function joinFlow(page, info) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Brand overlay + screen-share detection                              */
+/* ------------------------------------------------------------------ */
+
+function writeBrandOverlay() {
+  try {
+    const text = BRAND_TEXT.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100vw;height:100vh;overflow:hidden;background:#000}
+  #brand{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:0 8vw;
+    color:#fff;font:600 40px/1.25 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    letter-spacing:6px;text-transform:uppercase;
+    text-shadow:0 2px 18px rgba(0,0,0,.9);
+  }
+</style></head>
+<body><div id="brand">${text}</div></body></html>`;
+    fs.writeFileSync(BRAND_FILE, html);
+  } catch (_) {}
+}
+
+async function showBrandOverlay(context) {
+  writeBrandOverlay();
+  try {
+    const p = await context.newPage();
+    await p.goto('file://' + BRAND_FILE, { waitUntil: 'domcontentloaded' });
+    await p.bringToFront();
+    return p;
+  } catch (e) {
+    log('brand overlay failed:', e.message);
+    return null;
+  }
+}
+
+async function isScreenSharing(page) {
+  try {
+    return await page.evaluate(() => {
+      if (document.querySelector('#sharee-container, .sharee-container, #share-container, .sharing-screen, [class*="sharee"]')) return true;
+      const t = (document.body && document.body.innerText) || '';
+      if (/you are (screen )?sharing|you are viewing|is sharing (their )?screen/i.test(t)) return true;
+      return false;
+    });
+  } catch (_) {
+    return false;
+  }
+}
+
+async function hideMeetingChrome(page) {
+  try {
+    await page.addStyleTag({
+      content: '#wc-footer,#footer,[class*="meeting-footer"],[class*="footer-bar"]{display:none!important}' +
+        'body{overflow:hidden!important}' +
+        '#sharee-container,[class*="sharee"]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483000!important}',
+    });
+  } catch (_) {}
+}
+
+/* ------------------------------------------------------------------ */
 /* Main                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -241,10 +305,13 @@ async function joinFlow(page, info) {
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-infobars',
-      '--disable-features=Translate,MediaRouter,OptimizationHints',
+      '--disable-features=Translate,MediaRouter,OptimizationHints,CalculateNativeWinOcclusion',
       '--window-size=1280,720',
       '--window-position=0,0',
       '--start-fullscreen',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
     ],
   });
 
@@ -256,6 +323,9 @@ async function joinFlow(page, info) {
     permissions: ['microphone'],
   });
 
+  const brandPage = await showBrandOverlay(context);
+  if (brandPage) await brandPage.bringToFront().catch(() => {});
+
   while (!stopping && Date.now() < HARD_STOP) {
     let page;
     try {
@@ -266,6 +336,8 @@ async function joinFlow(page, info) {
 
       const joinDeadline = Date.now() + JOIN_TIMEOUT_MS;
       let lastState = '';
+      let lastShare = '';
+      let lastHide = 0;
 
       while (!stopping && Date.now() < HARD_STOP) {
         await sleep(KEEPALIVE_MS);
@@ -275,7 +347,24 @@ async function joinFlow(page, info) {
           lastState = state;
         }
 
-        if (state === 'in') continue;
+        if (state === 'in') {
+          const sharing = await isScreenSharing(page);
+          if (sharing !== lastShare) {
+            log('screen sharing:', sharing);
+            lastShare = sharing;
+          }
+          if (sharing) {
+            if (Date.now() - lastHide > 5000) {
+              await hideMeetingChrome(page);
+              lastHide = Date.now();
+            }
+            await page.bringToFront().catch(() => {});
+          } else if (brandPage) {
+            await brandPage.bringToFront().catch(() => {});
+          }
+          continue;
+        }
+        if (brandPage) await brandPage.bringToFront().catch(() => {});
         if (state === 'waiting') {
           if (Date.now() > joinDeadline) throw new Error('stuck in waiting room');
           continue;
