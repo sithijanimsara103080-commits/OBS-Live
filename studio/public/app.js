@@ -55,12 +55,23 @@ async function detectServer() {
   return false;
 }
 
+let SERVER_OFFLINE = false;
+
+function isLocalTab(name) {
+  return name === 'sources' || name === 'stream' || name === 'settings';
+}
+
 function setOffline(off) {
-  $('banner').style.display = off ? 'flex' : 'none';
+  SERVER_OFFLINE = off;
+  $('banner').style.display = off && isLocalTab(ACTIVE_TAB) ? 'flex' : 'none';
   for (const id of ['btnStart', 'btnStop', 'btnApply', 'btnSaveSettings', 'drop', 'btnPickImage', 'btnPickVideo', 'btnAddText', 'btnAddColor', 'btnAddScreen']) {
     const el = $(id);
     if (el) el.classList.toggle('disabled', off);
   }
+}
+
+function syncBanner() {
+  $('banner').style.display = SERVER_OFFLINE && isLocalTab(ACTIVE_TAB) ? 'flex' : 'none';
 }
 
 async function api(method, path, body) {
@@ -686,10 +697,14 @@ async function boot() {
 }
 
 /* tabs */
+let ACTIVE_TAB = 'sources';
+
 function switchTab(name) {
+  ACTIVE_TAB = name;
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
   document.querySelectorAll('.pane').forEach((x) => x.classList.toggle('active', x.id === `pane-${name}`));
   if (name === 'cloud') cloudRefresh(true);
+  syncBanner();
 }
 document.querySelectorAll('.tab').forEach((t) => {
   t.addEventListener('click', () => switchTab(t.dataset.tab));
