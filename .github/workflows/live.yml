@@ -82,7 +82,7 @@ jobs:
         if: steps.guard.outputs.already_running == '0'
         env:
           YT_RTMP: ${{ secrets.YT_RTMP }}
-          ZOOM_LINK: ${{ github.event.inputs.zoom_link || secrets.ZOOM_LINK }}
+          ZOOM_LINK: ${{ github.event.inputs.zoom_link || vars.ZOOM_LINK || secrets.ZOOM_LINK }}
           ZOOM_NAME: ${{ vars.ZOOM_NAME || 'Live' }}
           BRAND_TEXT: ${{ vars.BRAND_TEXT || 'Radapasa Astronomical Society' }}
           DURATION_MIN: ${{ github.event.inputs.duration_min || '345' }}

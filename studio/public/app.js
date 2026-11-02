@@ -857,6 +857,8 @@ const CLOUD = {
   repo: localStorage.getItem('gh_repo') || 'sithijanimsara103080-commits/OBS-Live',
   workflow: 'live.yml',
   token: localStorage.getItem('gh_token') || '',
+  zoom: localStorage.getItem('gh_zoom') || '',
+  hours: localStorage.getItem('gh_hours') || '5.5',
   run: null,
   timer: null,
 };
@@ -911,6 +913,68 @@ async function cloudRefresh(quiet) {
   }
 }
 
+async function cloudSetVariable(name, value) {
+  const base = `${CLOUD.repo}/actions/variables`;
+  const body = JSON.stringify({ name, value });
+  const opts = { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body };
+  try {
+    await cloudFetch(`/repos/${base}/${name}`, opts);
+  } catch (e) {
+    if (!/already exists|409/i.test(e.message)) throw e;
+    await cloudFetch(`/repos/${base}/${name}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+  }
+}
+
+async function cloudStartStream() {
+  if (!CLOUD.token) return toast('Paste a GitHub token first', true);
+  if (!/^https?:\/\//i.test(CLOUD.zoom)) {
+    return toast('Paste the Zoom meeting link first', true);
+  }
+  const btn = $('cloudStart');
+  btn.textContent = '…';
+  try {
+    await cloudSetVariable('ZOOM_LINK', CLOUD.zoom);
+    try {
+      await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/enable`, { method: 'PUT' });
+    } catch (e) { if (!/409/i.test(e.message)) throw e; }
+    const minutes = String(Math.max(15, Math.round(parseFloat(CLOUD.hours || '5.5') * 60)));
+    await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/dispatches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main', inputs: { duration_min: minutes } }),
+    });
+    toast('Going live — runner takes ~1 min');
+    setTimeout(() => cloudRefresh(true), 5000);
+  } catch (e) {
+    toast('Start failed: ' + e.message, true);
+  } finally {
+    btn.textContent = '\u25B6 Go live now';
+  }
+}
+
+async function cloudStopStream() {
+  if (!CLOUD.token) return toast('Paste a GitHub token first', true);
+  try {
+    try {
+      await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/disable`, { method: 'PUT' });
+    } catch (e) { if (!/409/i.test(e.message)) throw e; }
+    for (const st of ['in_progress', 'queued', 'pending', 'waiting']) {
+      const j = await cloudFetch(`/repos/${CLOUD.repo}/actions/runs?status=${st}&per_page=20`);
+      for (const r of j.workflow_runs || []) {
+        await cloudFetch(`/repos/${CLOUD.repo}/actions/runs/${r.id}/cancel`, { method: 'POST' });
+      }
+    }
+    toast('Stopped — auto-restart disabled');
+    setTimeout(() => cloudRefresh(true), 3000);
+  } catch (e) {
+    toast('Stop failed: ' + e.message, true);
+  }
+}
+
 function cloudInit() {
   $('ghRepo').value = CLOUD.repo;
   $('ghToken').value = CLOUD.token;
@@ -924,29 +988,18 @@ function cloudInit() {
     localStorage.setItem('gh_repo', CLOUD.repo);
     cloudRefresh();
   });
-  $('cloudStart').addEventListener('click', async () => {
-    if (!CLOUD.token) return toast('Paste a GitHub token first', true);
-    try {
-      await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/dispatches`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref: 'main' }),
-      });
-      toast('Cloud stream started — wait ~1 min for the runner');
-      setTimeout(() => cloudRefresh(true), 4000);
-    } catch (e) { toast('Start failed: ' + e.message, true); }
+  $('cloudZoom').value = CLOUD.zoom;
+  $('cloudZoom').addEventListener('change', () => {
+    CLOUD.zoom = $('cloudZoom').value.trim();
+    localStorage.setItem('gh_zoom', CLOUD.zoom);
   });
-  $('cloudStop').addEventListener('click', async () => {
-    if (!CLOUD.token) return toast('Paste a GitHub token first', true);
-    try {
-      const j = await cloudFetch(`/repos/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}/runs?per_page=10`);
-      const run = (j.workflow_runs || []).find((r) => r.status === 'queued' || r.status === 'in_progress');
-      if (!run) return toast('No running cloud stream');
-      await cloudFetch(`/repos/${CLOUD.repo}/actions/runs/${run.id}/cancel`, { method: 'POST' });
-      toast('Cancelling run #' + run.run_number);
-      setTimeout(() => cloudRefresh(true), 3000);
-    } catch (e) { toast('Stop failed: ' + e.message, true); }
+  $('cloudHours').value = CLOUD.hours;
+  $('cloudHours').addEventListener('change', () => {
+    CLOUD.hours = $('cloudHours').value || '5.5';
+    localStorage.setItem('gh_hours', CLOUD.hours);
   });
+  $('cloudStart').addEventListener('click', cloudStartStream);
+  $('cloudStop').addEventListener('click', cloudStopStream);
   $('cloudOpen').addEventListener('click', () => {
     window.open(`https://github.com/${CLOUD.repo}/actions/workflows/${CLOUD.workflow}`, '_blank', 'noopener');
   });
