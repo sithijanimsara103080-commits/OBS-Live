@@ -914,15 +914,19 @@ async function cloudRefresh(quiet) {
 }
 
 async function cloudSetVariable(name, value) {
-  const base = `${CLOUD.repo}/actions/variables`;
+  const base = `/repos/${CLOUD.repo}/actions/variables`;
   const body = JSON.stringify({ name, value });
-  const opts = { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body };
+  const opts = {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  };
   try {
-    await cloudFetch(`/repos/${base}/${name}`, opts);
+    await cloudFetch(`${base}/${name}`, opts);
   } catch (e) {
-    if (!/already exists|409/i.test(e.message)) throw e;
-    await cloudFetch(`/repos/${base}/${name}`, {
-      method: 'PATCH',
+    if (!/\b404\b|not found/i.test(e.message)) throw e;
+    await cloudFetch(base, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
     });
