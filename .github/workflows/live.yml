@@ -118,7 +118,7 @@ jobs:
           DURATION_MIN: ${{ github.event.inputs.duration_min || '345' }}
           MAX_RUN_MIN: ${{ github.event.inputs.duration_min || '345' }}
         run: |
-          chmod +x scripts/run.sh scripts/run-app.sh
+          chmod +x scripts/run.sh scripts/run-app.sh scripts/report.sh
           if [ "${BOT_MODE}" = "web" ]; then ./scripts/run.sh; else ./scripts/run-app.sh; fi
 
       - name: Upload logs and screenshots

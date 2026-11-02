@@ -111,7 +111,7 @@ report() {
     echo "--- ffmpeg/pulse ---"
     tail -n 5 /tmp/pulse.log 2>/dev/null
   } > /tmp/report.txt 2>&1
-  GH_TOKEN="${GH_TOKEN:-}" "$r" "$(cat /tmp/report.txt)" >/dev/null 2>&1 || true
+  GH_TOKEN="${GH_TOKEN:-}" bash "$r" "$(cat /tmp/report.txt)" >/dev/null 2>&1 || true
 }
 
 join_url="zoommtg://zoom.us/join?action=join&confno=$ID&uname=$NAME"
@@ -169,8 +169,8 @@ while [ "$(date +%s)" -lt "$END" ]; do
       fi
     fi
   fi
-  if [ $((elapsed % 120)) -lt 4 ]; then shot "t${elapsed}"; fi
-  if [ $((elapsed % 30)) -lt 4 ]; then report "running"; fi
+  if [ $((elapsed % 30)) -lt 4 ]; then shot "t${elapsed}"; fi
+  if [ $((elapsed % 20)) -lt 4 ]; then report "running"; fi
 done
 
 log "time is up"
