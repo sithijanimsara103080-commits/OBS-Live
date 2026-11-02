@@ -44,6 +44,7 @@
       <button class="tab" data-tab="stream">Stream</button>
       <button class="tab" data-tab="settings">Settings</button>
       <button class="tab" data-tab="cloud">Cloud</button>
+      <button class="tab" data-tab="live">Live</button>
     </div>
 
     <div class="tabbody">
@@ -181,6 +182,23 @@
           <h3>Latest run</h3>
           <div id="cloudStatus"><span class="mut">—</span></div>
           <div class="runs" id="cloudRuns"></div>
+        </div>
+      </div>
+
+      <!-- LIVE -->
+      <div class="pane" id="pane-live">
+        <div class="section">
+          <h3>YouTube live</h3>
+          <label class="f">Live / channel link</label>
+          <input type="text" id="ytUrl" placeholder="https://youtube.com/watch?v=… or @channel">
+          <div class="row" style="margin-top:8px">
+            <button class="btn sm blue" id="ytLoad">Show live</button>
+            <button class="btn sm" id="ytOpen">Open on YouTube &#8599;</button>
+          </div>
+          <div class="hint">Paste the live link from YouTube Studio, or your channel handle (e.g. <b>@radapasa</b>). Saved in this browser.</div>
+        </div>
+        <div class="player" id="ytWrap" style="display:none">
+          <iframe id="ytPlayer" title="YouTube live" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
         </div>
       </div>
     </div>

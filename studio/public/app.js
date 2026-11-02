@@ -807,6 +807,49 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* live embed                                                         */
+/* ------------------------------------------------------------------ */
+
+function ytEmbed(input) {
+  const u = String(input || '').trim();
+  if (!u) return '';
+  let m = u.match(/(?:[?&]v=|youtu\.be\/|\/live\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+  if (m) return `https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1&playsinline=1`;
+  m = u.match(/(UC[A-Za-z0-9_-]{22})/);
+  if (m) return `https://www.youtube.com/embed/live_stream?channel=${m[1]}&autoplay=1&mute=1`;
+  m = u.match(/@([A-Za-z0-9._-]+)/);
+  if (m) return `https://www.youtube.com/embed/live_stream?channel=@${encodeURIComponent(m[1])}&autoplay=1&mute=1`;
+  if (/^[A-Za-z0-9_-]{11}$/.test(u)) return `https://www.youtube.com/embed/${u}?autoplay=1&mute=1&playsinline=1`;
+  return '';
+}
+
+function ytApply(value) {
+  const src = ytEmbed(value);
+  if (!src) {
+    toast('Could not read that YouTube link', true);
+    return false;
+  }
+  $('ytPlayer').src = src;
+  $('ytWrap').style.display = 'block';
+  localStorage.setItem('yt_live', String(value || '').trim());
+  return true;
+}
+
+function ytInit() {
+  const saved = localStorage.getItem('yt_live') || '';
+  $('ytUrl').value = saved;
+  if (saved) ytApply(saved);
+  $('ytLoad').addEventListener('click', () => ytApply($('ytUrl').value));
+  $('ytOpen').addEventListener('click', () => {
+    const v = String($('ytUrl').value || '').trim();
+    if (!v) return toast('Paste a YouTube link first', true);
+    const url = /^https?:\/\//i.test(v) ? v : `https://www.youtube.com/${v.startsWith('@') ? v + '/live' : v}`;
+    window.open(url, '_blank', 'noopener');
+  });
+  $('ytUrl').addEventListener('keydown', (e) => { if (e.key === 'Enter') ytApply($('ytUrl').value); });
+}
+
+/* ------------------------------------------------------------------ */
 /* cloud (GitHub Actions)                                             */
 /* ------------------------------------------------------------------ */
 
@@ -924,5 +967,7 @@ $('bannerRetry').addEventListener('click', async () => {
   if (ok) location.reload();
   else toast('Still cannot reach http://127.0.0.1:3000 — run start-studio.bat', true);
 });
+
+ytInit();
 
 boot().catch((e) => toast('Failed to load studio: ' + e.message, true));
