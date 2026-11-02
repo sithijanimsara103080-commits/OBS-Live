@@ -95,6 +95,25 @@ stream_loop() {
 
 shot() { ffmpeg -hide_banner -loglevel error -f x11grab -video_size "$VIDEO_SIZE" -i "$DISPLAY" -frames:v 1 -y "$SHOTS_DIR/$1.png" >/dev/null 2>&1 || true; }
 
+report() {
+  [ -x ../scripts/report.sh ] || [ -x scripts/report.sh ] || return 0
+  local r="scripts/report.sh"; [ -x "$r" ] || r="../scripts/report.sh"
+  {
+    echo "phase=$1 t=${elapsed}s joined=$joined"
+    echo "zoom_pid=${ZOOM_PID:-none} alive=$(kill -0 "${ZOOM_PID:-0}" 2>/dev/null && echo yes || echo no)"
+    echo "ffmpeg=$(pgrep -f 'ffmpeg.*x11grab' >/dev/null && echo running || echo dead)"
+    echo "--- windows ---"
+    for w in $(xdotool search --onlyvisible --name '.' 2>/dev/null | head -15); do
+      echo "[$w] $(xdotool getwindowname "$w" 2>/dev/null)"
+    done
+    echo "--- zoom.log ---"
+    tail -n 25 /tmp/zoom.log 2>/dev/null
+    echo "--- ffmpeg/pulse ---"
+    tail -n 5 /tmp/pulse.log 2>/dev/null
+  } > /tmp/report.txt 2>&1
+  GH_TOKEN="${GH_TOKEN:-}" "$r" "$(cat /tmp/report.txt)" >/dev/null 2>&1 || true
+}
+
 join_url="zoommtg://zoom.us/join?action=join&confno=$ID&uname=$NAME"
 [ -n "$PWD_" ] && join_url="$join_url&pwd=$PWD_"
 
@@ -151,6 +170,7 @@ while [ "$(date +%s)" -lt "$END" ]; do
     fi
   fi
   if [ $((elapsed % 120)) -lt 4 ]; then shot "t${elapsed}"; fi
+  if [ $((elapsed % 30)) -lt 4 ]; then report "running"; fi
 done
 
 log "time is up"

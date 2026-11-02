@@ -114,6 +114,7 @@ jobs:
           ZOOM_NAME: ${{ vars.ZOOM_NAME || 'Live' }}
           BRAND_TEXT: ${{ vars.BRAND_TEXT || 'Radapasa Astronomical Society' }}
           BOT_MODE: ${{ github.event.inputs.bot_mode || vars.BOT_MODE || 'app' }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           DURATION_MIN: ${{ github.event.inputs.duration_min || '345' }}
           MAX_RUN_MIN: ${{ github.event.inputs.duration_min || '345' }}
         run: |
