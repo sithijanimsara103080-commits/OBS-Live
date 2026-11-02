@@ -76,6 +76,18 @@ jobs:
             libxcb-icccm4 libxcb-util1 libxcb-render0 libpulse-mainloop-glib0 \
             libxtst6 libxinerama1 libxi6 libsm6 libice6
 
+      - name: Install Zoom runtime libraries (Qt6)
+        if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') != 'web'
+        run: |
+          pkgs="qt6-declarative-dev libqt6svg6 libqt6xml6 libqt6core5compat6 \
+                libqt6quick6 libqt6quickwidgets6 libqt6qml6 libqt6opengl6 \
+                libqt6multimedia6 libqt6concurrent6 libqt6printsupport6 \
+                qml6-module-qtquick-controls qml6-module-qtquick-layouts \
+                qml6-module-qtquick-window qml6-module-qtqml-workerscript"
+          sudo apt-get install -y --no-install-recommends $pkgs \
+            || for p in $pkgs; do sudo apt-get install -y --no-install-recommends "$p" || echo "skip $p"; done
+          LD_LIBRARY_PATH=/opt/zoom:/opt/zoom/lib ldd /opt/zoom/zoom 2>/dev/null | grep 'not found' || echo "all libs ok"
+
       - name: Install Zoom desktop client
         if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') != 'web'
         run: |
@@ -88,7 +100,7 @@ jobs:
           sudo apt-get install -y /tmp/zoom.deb || sudo dpkg -i /tmp/zoom.deb || true
           sudo apt-get -f install -y || true
           ls -l /opt/zoom/zoom
-          /opt/zoom/zoom --version || true
+          LD_LIBRARY_PATH=/opt/zoom:/opt/zoom/lib ldd /opt/zoom/zoom 2>/dev/null | grep 'not found' || echo "all libs ok"
 
       - name: Install Google Chrome
         if: steps.guard.outputs.already_running == '0' && (github.event.inputs.bot_mode || vars.BOT_MODE || 'app') == 'web'
