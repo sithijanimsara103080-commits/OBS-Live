@@ -11,7 +11,7 @@ on:
         description: 'Zoom link (leave empty to use the ZOOM_LINK secret)'
         required: false
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */2 * * *'
 
 permissions:
   contents: read
