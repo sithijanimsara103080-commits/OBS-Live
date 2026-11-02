@@ -130,8 +130,13 @@ press_join_buttons() {
 launch_zoom() {
   log "launching Zoom client"
   export LD_LIBRARY_PATH="/opt/zoom:/opt/zoom/lib:${LD_LIBRARY_PATH:-}"
-  export QT_QPA_PLATFORM=xcb
-  if [ -x /opt/zoom/zoom.sh ]; then
+  if [ -d /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms ]; then
+    export QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/qt6/plugins/platforms
+    export QT_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/qt6/plugins
+  fi
+  if [ -x /usr/bin/zoom ]; then
+    /usr/bin/zoom "$join_url" >/tmp/zoom.log 2>&1 &
+  elif [ -x /opt/zoom/zoom.sh ]; then
     /opt/zoom/zoom.sh "$join_url" >/tmp/zoom.log 2>&1 &
   else
     "$ZOOM_BIN" "$join_url" >/tmp/zoom.log 2>&1 &

@@ -83,7 +83,8 @@ jobs:
                 libqt6quick6 libqt6quickwidgets6 libqt6qml6 libqt6opengl6 \
                 libqt6multimedia6 libqt6concurrent6 libqt6printsupport6 \
                 qml6-module-qtquick-controls qml6-module-qtquick-layouts \
-                qml6-module-qtquick-window qml6-module-qtqml-workerscript"
+                qml6-module-qtquick-window qml6-module-qtqml-workerscript \
+                qt6-qpa-plugins libqt6gui6 libqt6widgets6 libqt6gui6t64 libqt6widgets6t64"
           sudo apt-get install -y --no-install-recommends $pkgs \
             || for p in $pkgs; do sudo apt-get install -y --no-install-recommends "$p" || echo "skip $p"; done
           LD_LIBRARY_PATH=/opt/zoom:/opt/zoom/lib ldd /opt/zoom/zoom 2>/dev/null | grep 'not found' || echo "all libs ok"
